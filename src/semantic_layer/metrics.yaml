@@ -1,0 +1,45 @@
+# Sample metric definitions — dbt MetricFlow compatible
+# Replace these with your actual business metrics.
+
+version: 2
+
+metrics:
+
+  - name: revenue
+    label: "Revenue"
+    description: "Gross revenue. Excludes returns and discounts. Source: orders table."
+    type: simple
+    type_params:
+      measure: gross_revenue_amount
+    filter: "{{ Dimension('order__status') }} = 'completed'"
+    dimensions:
+      - region
+      - product_category
+      - channel
+    time_spine:
+      standard_granularity_column: order_date
+
+  - name: order_count
+    label: "Order Count"
+    description: "Count of completed orders. Correlated metric with revenue."
+    type: simple
+    type_params:
+      measure: order_id_count
+    filter: "{{ Dimension('order__status') }} = 'completed'"
+    time_spine:
+      standard_granularity_column: order_date
+
+  - name: average_order_value
+    label: "Average Order Value (AOV)"
+    description: "Revenue divided by order count. Cross-metric dependency: moves with both revenue and orders."
+    type: ratio
+    type_params:
+      numerator: revenue
+      denominator: order_count
+
+  - name: churn_rate
+    label: "Monthly Churn Rate"
+    description: "Percentage of customers who did not reorder within 90 days."
+    type: simple
+    type_params:
+      measure: churned_customer_count

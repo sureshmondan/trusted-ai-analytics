@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# dbt
+target/
+dbt_packages/
+logs/
+.dbt/
+
+# Notebooks (outputs stripped before commit)
+*.ipynb_checkpoints/
+
+# Data files (keep schemas, not data dumps)
+*.csv
+*.parquet
+*.json
+!examples/**/*.json
+!src/semantic_layer/*.yaml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Credentials / keys
+*.pem
+*.key
+service_account.json
+credentials.json

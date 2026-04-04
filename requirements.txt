@@ -1,0 +1,44 @@
+# Lucid Analytics — Python Dependencies
+#
+# Core agent framework
+langgraph>=0.2.0
+langchain>=0.2.0
+langchain-openai>=0.1.0
+langchain-community>=0.2.0
+
+# LLM providers (uncomment your stack)
+# openai>=1.30.0
+# anthropic>=0.25.0
+
+# Knowledge Graph
+neo4j>=5.20.0            # Production KG backend
+# networkx>=3.3          # Lightweight in-memory KG for prototyping
+
+# Vector Store (uncomment your preferred backend)
+# pinecone-client>=3.0.0
+# weaviate-client>=4.0.0
+chromadb>=0.5.0          # Default: local dev / demo
+
+# Semantic Layer (dbt MetricFlow)
+dbt-core>=1.8.0
+# dbt-snowflake>=1.8.0
+# dbt-databricks>=1.8.0
+dbt-duckdb>=1.8.0        # Default: local dev / demo
+
+# Data platform (uncomment your stack)
+# snowflake-connector-python>=3.10.0
+# databricks-sql-connector>=3.0.0
+duckdb>=0.10.0           # Default: local dev / demo
+
+# Database (for Approved Numbers Store)
+psycopg[binary]>=3.1.0   # Production: PostgreSQL
+sqlalchemy>=2.0.0
+
+# Embedding
+sentence-transformers>=3.0.0
+
+# Dev + testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
