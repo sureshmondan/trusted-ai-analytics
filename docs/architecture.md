@@ -142,6 +142,22 @@ CREATE TABLE approved_numbers (
 
 **What makes this different from VQR/Trusted Answers**: VQR stores verified *queries*. The Approved Numbers Store stores verified *results*. These are fundamentally different. A verified query still produces a wrong answer if data changes. A verified result is the ground truth the Validation Agent checks against.
 
+**Why the DW keeps moving after close**: Finance closes the books on a specific date. The DW does not freeze. Late-arriving records continue to land. Pipelines backfill corrections. ERP adjustments (accruals, write-offs, restatements) apply at the reporting layer and often never touch the transactional tables. An LLM querying live data in November may return $4.4B for a metric Finance approved at $4.0B net on October 1st. The Approved Numbers Store captures the October 1st fingerprint — same DW, specific point in time, with the adjustments that actually closed the books.
+
+**Backfill Strategy — No Migration Required**
+
+This is the key adoption argument: the Approved Numbers Store can be backfilled from sources already present in most enterprise DW stacks. No upstream schema changes are required.
+
+| Backfill Source | What It Provides | Available If... |
+|---|---|---|
+| **dbt snapshots** | SCD Type 2 history — point-in-time state of any modeled table | Team uses dbt snapshots on Gold/Curated models |
+| **Period-end summary tables** | Month/quarter close figures already landed in the DW | Finance close process writes to a reporting layer |
+| **BI certified datasets** | Tableau / Power BI certified numbers = human-approved outputs | BI governance layer exists |
+| **ERP close tables** | SAP / Oracle GL close figures that fed the DW at period end | ERP integration exists |
+| **Audit / history tables** | `_history` or `_audit` tables with `valid_from` / `valid_to` | Regulated industry with audit requirements |
+
+**Implementation approach**: Point the Approved Numbers Store loader at existing period-end snapshots and dbt history tables. Backfill 12–24 months of approved baselines in hours. Day one, the Validation Agent has context. Nothing in the transformation layer changes. This is a brownfield-safe, greenfield-ready pattern — it blends into the existing architecture rather than replacing it.
+
 ---
 
 ### Layer 5: Agent Orchestration
@@ -228,7 +244,7 @@ flowchart TB
 ## Design Principles
 
 1. **Additive, not replacement** — Works on top of Snowflake, Databricks, dbt. Doesn't require a new data platform.
-2. **Dynamic, not static** — Approved Numbers Store is maintained by analysts, not a dev team. It updates as business context changes.
+2. **Dynamic, not static** — Approved Numbers Store is maintained by analysts, not a dev team. It updates as business context changes. Initial population is a backfill from existing DW snapshots — no migration required.
 3. **Explainability first** — Every answer includes *how* we arrived at it. No black-box results.
 4. **Fail loudly** — Low-confidence answers are surfaced with flags, not silently returned. Analysts must make the final call on flagged results.
 5. **Named pattern, not vendor product** — The value is in the architecture, not the implementation. Run it on any stack.
@@ -239,7 +255,7 @@ flowchart TB
 
 - You're not replacing your semantic layer — you're giving it a validation loop
 - You're not replacing Snowflake or Databricks — you're adding the layer they haven't shipped
-- The Approved Numbers Store is a new artifact that DE teams own and maintain
+- The Approved Numbers Store is a new artifact that DE teams own and maintain — but it backfills from existing dbt snapshots, period-end tables, and BI-certified datasets. No upstream schema changes required.
 - The Knowledge Graph is the biggest net-new investment — but it pays off across the entire agent system
 
 ---
