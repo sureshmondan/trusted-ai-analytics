@@ -50,7 +50,7 @@ This is where the gap becomes concrete. Here are five validation dimensions abse
 
 | Validation Dimension | What It Checks | Why It Matters |
 |---|---|---|
-| **Approved Numbers** | Does this result match what finance/ops signed off on at close? | Finance and the LLM can return different answers for the same question. One of them is wrong. |
+| **Approved Numbers** | Does this result match what the DW showed at close — the exact scope, grain, and adjustments Finance blessed? | The DW keeps moving after close. Late-arriving records, backfilled corrections, ERP write-offs that never touched the transactional tables. The LLM queries live data. Finance approved a moment in time. Those are two different numbers. |
 | **Temporal Trend Consistency** | Is this value within expected range relative to prior periods? | A 2x revenue figure should be flagged before it reaches a meeting, not after. |
 | **Cross-Metric Consistency** | Do correlated metrics agree directionally? | Revenue up 2x with customer count flat and no new markets opened is a red flag, not a result to silently return. |
 | **Source Agreement** | Does the number match across source systems? | CRM says 1,200 customers. ERP says 1,150. The LLM picked one. You don't know which. |
@@ -90,7 +90,7 @@ The `confidence` field in Snowflake's API response is revealing here. A high con
 
 Here's what I've noticed: the data industry only solves problems it names.
 
-Databricks didn't invent the idea of layering raw, refined, and enriched data. Staging layers existed before Bronze/Silver/Gold. What Medallion Architecture did was name the pattern, define the boundaries, and give teams a shared vocabulary. Once it had a name, adoption accelerated — not because the technical insight was new, but because the frame was clear.
+Databricks didn't invent the idea of layering raw, refined, and enriched data. Staging layers existed before Bronze/Silver/Gold. What Medallion Architecture did was give the industry a shared frame — name the pattern, define the boundaries, give teams a common vocabulary. Once the frame existed, the behavior changed. Adoption accelerated not because the technical insight was new, but because the frame made it actionable.
 
 We're at the same inflection point with AI analytics. The problem isn't SQL quality. The problem is *business result correctness* — and right now, nobody is naming it.
 
@@ -107,42 +107,40 @@ This is not a replacement for Snowflake or Databricks. Build on Cortex Analyst. 
 A four-agent pipeline that sits on top of your existing data platform:
 
 ```mermaid
-flowchart TD
-    Q(["🗣️ User Question"])
-
-    subgraph pipeline["Lucid Analytics · Four-Agent Pipeline"]
-        direction TB
+flowchart TB
+ subgraph pipeline["Lucid Analytics · Four-Agent Pipeline"]
+    direction TB
         QA["Query Agent\n─ Classifies intent\n─ Extracts entities & temporal context"]
         SA["SQL Agent\n─ Generates SQL\n─ Schema: Snowflake · Databricks"]
         VA["Validation Agent\n─ Business result verification\n─ Five-dimension check"]
         PA["Presentation Agent\n─ Confidence score\n─ Lineage & deviation flags"]
-    end
-
-    subgraph stores["Validation Intelligence Layer"]
-        direction LR
+  end
+ subgraph stores["Validation Intelligence Layer"]
+    direction LR
         ANS[("Approved\nNumbers Store")]
         KG[("Knowledge\nGraph")]
-    end
+  end
+    QA --> SA
+    SA --> VA
+    VA --> PA
+    PA --> A(["✅ Lucid Answer · Traceable · Verified"])
+    ANS -. validates .-> VA
+    Q(["🗣️ User Question"]) --> pipeline
+    KG -. context .-> VA
 
-    A(["✅ Lucid Answer · Traceable · Verified"])
-
-    Q --> QA --> SA --> VA --> PA --> A
-    ANS -.->|validates| VA
-    KG -.->|context| VA
-
-    style Q fill:#1565C0,color:#fff,stroke:#0D47A1
     style QA fill:#2E7D32,color:#fff,stroke:#1B5E20
     style SA fill:#2E7D32,color:#fff,stroke:#1B5E20
     style VA fill:#E65100,color:#fff,stroke:#BF360C
     style PA fill:#2E7D32,color:#fff,stroke:#1B5E20
-    style A fill:#1565C0,color:#fff,stroke:#0D47A1
     style ANS fill:#4A148C,color:#fff,stroke:#311B92
     style KG fill:#4A148C,color:#fff,stroke:#311B92
+    style A fill:#1565C0,color:#fff,stroke:#0D47A1
+    style Q fill:#1565C0,color:#fff,stroke:#0D47A1
 ```
 
 Two stores power the validation layer:
 
-- **Approved Numbers Store**: A dynamic store of business-validated benchmarks — prior period closes, finance-approved KPIs, operational thresholds. Not static SQL templates. Actual numbers that humans have signed off on. When the SQL Agent returns a 2x revenue figure, the Validation Agent checks it against the prior period trend, flags the deviation, and surfaces it before it becomes a meeting crisis.
+- **Approved Numbers Store**: A timestamped fingerprint of what the DW said at close — the exact scope, grain, and adjustments that Finance signed off on. Not a separate source of truth. Not static SQL templates. A snapshot of agreed-upon DW outputs at a known point in time. The DW keeps moving after close: late-arriving records land, pipelines backfill corrections, ERP adjustments apply at the reporting layer and never touch the transactional tables. The LLM queries live data and returns $4.4B. Finance approved $4.0B net on October 1st. The Validation Agent knows the difference and surfaces it before it reaches a slide deck.
 
 - **Knowledge Graph**: Encodes relationships between metrics, entities, business rules, and known events. It's what lets the Validation Agent know that correlated metrics should move together — and that a 2x revenue spike with flat customer count and no new markets is a signal worth examining, not a result to celebrate uncritically.
 
