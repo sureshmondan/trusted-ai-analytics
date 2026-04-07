@@ -140,9 +140,11 @@ CREATE TABLE approved_numbers (
 );
 ```
 
-**What makes this different from VQR/Trusted Answers**: VQR stores verified *queries*. The Approved Numbers Store stores verified *results*. These are fundamentally different. A verified query still produces a wrong answer if data changes. A verified result is the ground truth the Validation Agent checks against.
+**What makes this different from VQR/Trusted Answers**: VQR stores verified *queries*. The Approved Numbers Store stores verified *results* — specifically, the historical record of what humans have blessed as correct. These are fundamentally different. A verified query still produces a wrong answer if the business context changed. The Approved Numbers Store is the business context.
 
-**Why the DW keeps moving after close**: Finance closes the books on a specific date. The DW does not freeze. Late-arriving records continue to land. Pipelines backfill corrections. ERP adjustments (accruals, write-offs, restatements) apply at the reporting layer and often never touch the transactional tables. An LLM querying live data in November may return $4.4B for a metric Finance approved at $4.0B net on October 1st. The Approved Numbers Store captures the October 1st fingerprint — same DW, specific point in time, with the adjustments that actually closed the books.
+**The core problem this solves**: The AI has no access to business expectations. Finance closes Q3 books and approves a ballpark — revenue around $4.2B. That expectation lives in a signed-off report, in someone's head, in the CFO's email. The LLM has zero access to any of it. So it runs the query, gets $8.4B, confidence score looks fine, and the number goes into the deck. Nothing in the stack flagged it — because nothing in the stack knows what Finance expects the number to look like.
+
+**What the store is NOT**: It is not a frozen snapshot of the DW. It is not a replacement reporting source. The DW remains the system of record. The Approved Numbers Store is a sanity baseline — a history of human-approved figures used exclusively to validate whether a new AI-generated result is in the right neighborhood. If the LLM returns $4.3B against an approved baseline of $4.2B, it passes. If it returns $8.4B, the Validation Agent flags it before it reaches a meeting room.
 
 **Backfill Strategy — No Migration Required**
 
